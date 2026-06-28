@@ -12,6 +12,8 @@ import { UsersService } from '../users/users.service';
 import { VendeursService } from '../vendeurs/vendeurs.service';
 import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/create-auth.dto';
+import { LogsService } from '../logs/logs.service';
+import { ActionType } from '../logs/entities/log.entity';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +29,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
+    private readonly logsService: LogsService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -63,6 +66,14 @@ export class AuthService {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
+    this.logsService.create({
+      action: ActionType.LOGIN,
+      entityType: 'User',
+      entityId: user.id,
+      userId: user.id,
+      details: { method: 'password' },
+    });
+
     return this.generateTokens(user);
   }
 
@@ -95,6 +106,14 @@ export class AuthService {
         await this.vendeursService.updateDeviceId(result.vendeur.id, deviceId);
       }
     }
+
+    this.logsService.create({
+      action: ActionType.LOGIN,
+      entityType: 'User',
+      entityId: result.user.id,
+      userId: result.user.id,
+      details: { method: 'pin', deviceId },
+    });
 
     return this.generateTokens(result.user);
   }

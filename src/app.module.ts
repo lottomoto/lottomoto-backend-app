@@ -15,6 +15,7 @@ import { SettingsModule } from './settings/settings.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { UploadModule } from './upload/upload.module';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     SettingsModule,
     TicketsModule,
     UploadModule,
+    LogsModule,
   ],
   controllers: [],
   providers: [],

@@ -8,6 +8,8 @@ import { Succursale } from '../succursales/entities/succursale.entity';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/entities/user.entity';
+import { LogsService } from '../logs/logs.service';
+import { ActionType } from '../logs/entities/log.entity';
 
 @Controller('tickets')
 export class TicketsController {
@@ -15,6 +17,7 @@ export class TicketsController {
     private readonly ticketsService: TicketsService,
     @InjectRepository(Succursale)
     private readonly succursaleRepository: Repository<Succursale>,
+    private readonly logsService: LogsService,
   ) {}
 
   @Post()
@@ -97,14 +100,27 @@ export class TicketsController {
   @Patch(':id/pay')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.COMPTABLE)
-  payTicket(@Param('id') id: string) {
-    return this.ticketsService.payTicket(id);
+  async payTicket(@Request() req: any, @Param('id') id: string) {
+    const result = await this.ticketsService.payTicket(id);
+    this.logsService.create({
+      action: ActionType.PAY,
+      entityType: 'Ticket',
+      entityId: id,
+      userId: req.user.uuid || req.user.id,
+    });
+    return result;
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  remove(@Param('id') id: string) {
-    return this.ticketsService.remove(id);
+  async remove(@Request() req: any, @Param('id') id: string) {
+    await this.ticketsService.remove(id);
+    this.logsService.create({
+      action: ActionType.DELETE,
+      entityType: 'Ticket',
+      entityId: id,
+      userId: req.user.uuid || req.user.id,
+    });
   }
 }

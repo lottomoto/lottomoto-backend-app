@@ -6,16 +6,29 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/entities/user.entity';
+import { LogsService } from '../logs/logs.service';
+import { ActionType } from '../logs/entities/log.entity';
 
 @Controller('vendeurs')
 export class VendeursController {
-  constructor(private readonly vendeursService: VendeursService) {}
+  constructor(
+    private readonly vendeursService: VendeursService,
+    private readonly logsService: LogsService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  create(@Body() createVendeurDto: CreateVendeurDto) {
-    return this.vendeursService.create(createVendeurDto);
+  async create(@Request() req: any, @Body() createVendeurDto: CreateVendeurDto) {
+    const result = await this.vendeursService.create(createVendeurDto);
+    this.logsService.create({
+      action: ActionType.CREATE,
+      entityType: 'Vendeur',
+      entityId: result.id,
+      userId: req.user.id,
+      details: { username: createVendeurDto.username },
+    });
+    return result;
   }
 
   @Get()
@@ -41,15 +54,31 @@ export class VendeursController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  update(@Param('id') id: string, @Body() updateVendeurDto: UpdateVendeurDto) {
-    return this.vendeursService.update(id, updateVendeurDto);
+  async update(@Request() req: any, @Param('id') id: string, @Body() updateVendeurDto: UpdateVendeurDto) {
+    const result = await this.vendeursService.update(id, updateVendeurDto);
+    this.logsService.create({
+      action: ActionType.UPDATE,
+      entityType: 'Vendeur',
+      entityId: id,
+      userId: req.user.id,
+      details: { fields: Object.keys(updateVendeurDto) },
+    });
+    return result;
   }
 
   @Patch(':id/toggle-active')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  toggleActive(@Param('id') id: string) {
-    return this.vendeursService.toggleActive(id);
+  async toggleActive(@Request() req: any, @Param('id') id: string) {
+    const result = await this.vendeursService.toggleActive(id);
+    this.logsService.create({
+      action: ActionType.UPDATE,
+      entityType: 'Vendeur',
+      entityId: id,
+      userId: req.user.id,
+      details: { action: 'toggle-active', isActive: result.isActive },
+    });
+    return result;
   }
 
   @Patch(':id/reset-device')
@@ -62,7 +91,13 @@ export class VendeursController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.vendeursService.remove(id);
+  async remove(@Request() req: any, @Param('id') id: string) {
+    await this.vendeursService.remove(id);
+    this.logsService.create({
+      action: ActionType.DELETE,
+      entityType: 'Vendeur',
+      entityId: id,
+      userId: req.user.id,
+    });
   }
 }
