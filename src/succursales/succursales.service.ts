@@ -3,8 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Succursale } from './entities/succursale.entity';
 import { SuccursaleRapport } from './entities/succursale-rapport.entity';
+import { ComptableCollection } from './entities/comptable-collection.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { Vendeur } from '../vendeurs/entities/vendeur.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { CreateSuccursaleDto } from './dto/create-succursale.dto';
 import { UpdateSuccursaleDto } from './dto/update-succursale.dto';
 
@@ -15,10 +17,14 @@ export class SuccursalesService {
     private readonly succursaleRepository: Repository<Succursale>,
     @InjectRepository(SuccursaleRapport)
     private readonly rapportRepository: Repository<SuccursaleRapport>,
+    @InjectRepository(ComptableCollection)
+    private readonly collectionRepository: Repository<ComptableCollection>,
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
     @InjectRepository(Vendeur)
     private readonly vendeurRepository: Repository<Vendeur>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(dto: CreateSuccursaleDto): Promise<any> {
@@ -275,6 +281,105 @@ export class SuccursalesService {
       notes: dto.notes,
     });
     return this.rapportRepository.save(rapport);
+  }
+
+  async getComptableDashboard(comptableId: string): Promise<any> {
+    const today = new Date().toISOString().split('T')[0];
+    const superviseurs = await this.userRepository.find({ where: { role: UserRole.SUPERVISEUR, isActive: true } });
+
+    const results: { id: string; nom: string; cashEnMain: number; totalCollecte: number; cashACollecter: number }[] = [];
+    let myCashEnMain = 0;
+
+    for (const sup of superviseurs) {
+      const succursales = await this.succursaleRepository.find({
+        where: { superviseurId: sup.id },
+        relations: { vendeur: true },
+      });
+
+      let supCashEnMain = 0;
+      for (const s of succursales) {
+        if (s.vendeur?.userId) {
+          const tix = await this.ticketRepository.find({ where: { vendeurUserId: s.vendeur.userId, date: today } });
+          const ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
+          const rapports = await this.rapportRepository.find({ where: { succursaleId: s.id, date: today } });
+          const collecte = rapports.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
+          supCashEnMain += collecte;
+        }
+      }
+
+      const collections = await this.collectionRepository.find({ where: { superviseurId: sup.id, date: today } });
+      const dejaCollecte = collections.reduce((sum, c) => sum + Number(c.cashRecu), 0);
+      const cashACollecter = Math.max(supCashEnMain - dejaCollecte, 0);
+
+      const myCollections = collections.filter(c => c.comptableId === comptableId);
+      myCashEnMain += myCollections.reduce((sum, c) => sum + Number(c.cashRecu), 0);
+
+      results.push({
+        id: sup.id,
+        nom: `${sup.firstname} ${sup.lastname}`,
+        cashEnMain: supCashEnMain,
+        totalCollecte: dejaCollecte,
+        cashACollecter,
+      });
+    }
+
+    const totalACollecter = results.reduce((s, r) => s + r.cashACollecter, 0);
+    const totalDette = await this.collectionRepository
+      .createQueryBuilder('c')
+      .where('c.comptable_id = :comptableId', { comptableId })
+      .andWhere('c.date = :today', { today })
+      .select('COALESCE(SUM(c.dette), 0)', 'total')
+      .getRawOne()
+      .then(r => parseFloat(r?.total || '0'));
+
+    return {
+      superviseurs: results.filter(r => r.cashEnMain > 0 || r.cashACollecter > 0),
+      totaux: { cashEnMain: myCashEnMain, aCollecter: totalACollecter, dette: totalDette },
+    };
+  }
+
+  async comptableCollecter(comptableId: string, superviseurId: string, dto: { cashRecu: number; notes?: string }): Promise<any> {
+    const today = new Date().toISOString().split('T')[0];
+
+    const succursales = await this.succursaleRepository.find({
+      where: { superviseurId },
+      relations: { vendeur: true },
+    });
+
+    let supCashEnMain = 0;
+    for (const s of succursales) {
+      if (s.vendeur?.userId) {
+        const tix = await this.ticketRepository.find({ where: { vendeurUserId: s.vendeur.userId, date: today } });
+        const ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
+        const rapports = await this.rapportRepository.find({ where: { succursaleId: s.id, date: today } });
+        supCashEnMain += rapports.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
+      }
+    }
+
+    const existingCollections = await this.collectionRepository.find({ where: { superviseurId, date: today } });
+    const dejaCollecte = existingCollections.reduce((sum, c) => sum + Number(c.cashRecu), 0);
+    const cashACollecter = Math.max(supCashEnMain - dejaCollecte, 0);
+    const cashRecu = Math.min(dto.cashRecu, cashACollecter);
+    const dette = Math.max(cashACollecter - cashRecu, 0);
+
+    const collection = this.collectionRepository.create({
+      superviseurId,
+      comptableId,
+      date: today,
+      cashRecu,
+      dette,
+      notes: dto.notes || undefined,
+    });
+    return this.collectionRepository.save(collection);
+  }
+
+  async getComptableCollections(comptableId: string): Promise<any[]> {
+    return this.collectionRepository.find({
+      where: { comptableId },
+      relations: { superviseur: true },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
   }
 
   private format(s: Succursale): any {

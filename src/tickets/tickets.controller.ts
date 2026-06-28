@@ -5,6 +5,9 @@ import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Succursale } from '../succursales/entities/succursale.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from '../users/entities/user.entity';
 
 @Controller('tickets')
 export class TicketsController {
@@ -22,6 +25,8 @@ export class TicketsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.COMPTABLE, UserRole.SUPPORT)
   findAll() {
     return this.ticketsService.findAll();
   }
@@ -41,8 +46,15 @@ export class TicketsController {
   }
 
   @Get('admin/stats')
-  @UseGuards(JwtAuthGuard)
-  async getAdminStats(@Query('periode') periode: string, @Request() req: any) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR, UserRole.COMPTABLE)
+  async getAdminStats(
+    @Query('periode') periode: string,
+    @Query('dateFrom') dateFrom: string,
+    @Query('dateTo') dateTo: string,
+    @Query('vendeurId') vendeurId: string,
+    @Request() req: any,
+  ) {
     const role = req.user.role;
     if (role === 'superviseur') {
       const userId = req.user.uuid || req.user.id;
@@ -62,27 +74,36 @@ export class TicketsController {
           boulesBloquees: 0, recentTickets: [], tirageActif: null,
         };
       }
-      return this.ticketsService.getAdminStats(periode || 'auj', vendeurUserIds);
+      return this.ticketsService.getAdminStats(periode || 'auj', vendeurUserIds, dateFrom, dateTo);
     }
-    return this.ticketsService.getAdminStats(periode || 'auj');
+    const filterVendeurIds = vendeurId ? [vendeurId] : undefined;
+    return this.ticketsService.getAdminStats(periode || 'auj', filterVendeurIds, dateFrom, dateTo);
   }
 
   @Get('boules/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
   getBoulePlayCounts() {
     return this.ticketsService.getBoulePlayCounts();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR, UserRole.COMPTABLE, UserRole.SUPPORT)
   findOne(@Param('id') id: string) {
     return this.ticketsService.findOne(id);
   }
 
   @Patch(':id/pay')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.COMPTABLE)
   payTicket(@Param('id') id: string) {
     return this.ticketsService.payTicket(id);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
   remove(@Param('id') id: string) {
     return this.ticketsService.remove(id);
   }

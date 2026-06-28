@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as Joi from 'joi';
@@ -13,6 +14,7 @@ import { ResultatsModule } from './resultats/resultats.module';
 import { SettingsModule } from './settings/settings.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { UploadModule } from './upload/upload.module';
+import { RolesGuard } from './auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { UploadModule } from './upload/upload.module';
         CLOUDINARY_API_KEY: Joi.string().allow('').default(''),
         CLOUDINARY_API_SECRET: Joi.string().allow('').default(''),
         RESEND_API_KEY: Joi.string().allow('').default(''),
+        TYPEORM_SYNCHRONIZE: Joi.string().valid('true', 'false').default('false'),
+        COOKIE_SECURE: Joi.string().valid('true', 'false').default('false'),
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -48,7 +52,7 @@ import { UploadModule } from './upload/upload.module';
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_NAME'),
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: config.get<string>('TYPEORM_SYNCHRONIZE') === 'true',
       }),
     }),
     AuthModule,

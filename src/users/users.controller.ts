@@ -3,8 +3,13 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from './entities/user.entity';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -28,7 +33,6 @@ export class UsersController {
     return this.usersService.update(uuid, updateUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':uuid')
   remove(@Param('uuid') uuid: string, @Request() req: any) {
     if (req.user.uuid === uuid || req.user.id === uuid) {

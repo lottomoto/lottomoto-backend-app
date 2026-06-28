@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { LimitationsService } from './limitations.service';
 import { CreateLimitationDto } from './dto/create-limitation.dto';
 import { CreateLimitationAllDto } from './dto/create-limitation-all.dto';
 import { IsArray, IsString } from 'class-validator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from '../users/entities/user.entity';
 
 class CreateAllDto extends CreateLimitationAllDto {
   @IsArray()
@@ -15,6 +19,8 @@ class CreateAllDto extends CreateLimitationAllDto {
 }
 
 @Controller('limitations')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
 export class LimitationsController {
   constructor(private readonly limitationsService: LimitationsService) {}
 

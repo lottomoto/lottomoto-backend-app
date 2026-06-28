@@ -119,6 +119,14 @@ export class TicketsService {
     return parseFloat(result?.total || '0');
   }
 
+  private getTodayHaiti(): string {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Port-au-Prince', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  }
+
+  private getCurrentTimeHaiti(): string {
+    return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Port-au-Prince', hour: '2-digit', minute: '2-digit' }).format(new Date());
+  }
+
   private generateRef(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let ref = 'T';
@@ -140,9 +148,8 @@ export class TicketsService {
       }
     }
 
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const today = this.getTodayHaiti();
+    const currentTime = this.getCurrentTimeHaiti();
 
     const tirage = await this.tirageRepository.findOne({
       where: { borletteId: dto.borletteId, nom: dto.tirage },
@@ -240,7 +247,7 @@ export class TicketsService {
   }
 
   async getVendeurStats(vendeurUserId: string): Promise<any> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.getTodayHaiti();
 
     const todayTickets = await this.ticketRepository.find({
       where: { vendeurUserId, date: today },
@@ -301,12 +308,16 @@ export class TicketsService {
     return { totalVentes, ficheCount, commissionRate, boulesTendance, dernieresVentes, chartData };
   }
 
-  async getAdminStats(periode: string, vendeurUserIds?: string[]): Promise<any> {
+  async getAdminStats(periode: string, vendeurUserIds?: string[], customDateFrom?: string, customDateTo?: string): Promise<any> {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = this.getTodayHaiti();
 
     let dateFrom = today;
-    if (periode === 'semaine') {
+    let dateTo = today;
+    if (customDateFrom && customDateTo) {
+      dateFrom = customDateFrom;
+      dateTo = customDateTo;
+    } else if (periode === 'semaine') {
       const d = new Date(now);
       d.setDate(d.getDate() - d.getDay());
       dateFrom = d.toISOString().split('T')[0];
@@ -318,7 +329,8 @@ export class TicketsService {
       .leftJoinAndSelect('t.lignes', 'l')
       .leftJoinAndSelect('t.vendeurUser', 'u')
       .leftJoinAndSelect('t.borlette', 'b')
-      .where('t.date >= :dateFrom', { dateFrom });
+      .where('t.date >= :dateFrom', { dateFrom })
+      .andWhere('t.date <= :dateTo', { dateTo });
 
     if (vendeurUserIds && vendeurUserIds.length > 0) {
       qb.andWhere('t.vendeur_user_id IN (:...ids)', { ids: vendeurUserIds });
@@ -443,13 +455,16 @@ export class TicketsService {
       }));
 
     // Active tirage
-    const currentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+    const currentTime = this.getCurrentTimeHaiti();
     const allTirages = await this.tirageRepository.find();
     const activeTirage = allTirages.find(t => currentTime >= t.ouverture && currentTime < t.fermeture);
+
+    const totalVendeurs = await this.vendeurRepository.count();
 
     return {
       recettes, paiements: paiementsTotal, benefice, ticketCount,
       vendeursActifs: Object.keys(vendeurMap).length,
+      totalVendeurs,
       topVendeurs, tiragesJour, parBorlette, chartData,
       revenueByTirage, tirageNames,
       lotto4, lotto5, topBoules, boulesBloquees, recentTickets,
@@ -458,7 +473,7 @@ export class TicketsService {
   }
 
   async getBoulePlayCounts(): Promise<{ numero: number; count: number }[]> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.getTodayHaiti();
 
     const tickets = await this.ticketRepository.find({
       where: { date: today },

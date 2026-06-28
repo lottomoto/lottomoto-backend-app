@@ -11,10 +11,13 @@ import { VendeursModule } from '../vendeurs/vendeurs.module';
 import { MailModule } from '../mail/mail.module';
 import { User } from '../users/entities/user.entity';
 import { Succursale } from '../succursales/entities/succursale.entity';
+import { RolesGuard } from './guards/roles.guard';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { RateLimitGuard } from './guards/rate-limit.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Succursale]),
+    TypeOrmModule.forFeature([User, Succursale, RefreshToken]),
     UsersModule,
     VendeursModule,
     MailModule,
@@ -31,7 +34,7 @@ import { Succursale } from '../succursales/entities/succursale.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RolesGuard, RateLimitGuard],
   exports: [AuthService],
 })
 export class AuthModule {}
