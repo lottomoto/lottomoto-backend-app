@@ -77,12 +77,18 @@ export class SuccursalesService {
       if (existing) throw new ConflictException('Cet ID matériel existe déjà');
     }
 
-    if (dto.vendeurId && dto.vendeurId !== succursale.vendeurId) {
-      const vendeurPris = await this.succursaleRepository.findOne({
-        where: { vendeurId: dto.vendeurId },
-      });
-      if (vendeurPris) {
-        throw new ConflictException('Ce vendeur est déjà affecté à une autre succursale');
+    if (dto.vendeurId !== undefined && dto.vendeurId !== succursale.vendeurId) {
+      // Clear deviceId of old vendor when unlinked from succursale
+      if (succursale.vendeurId) {
+        await this.vendeurRepository.update(succursale.vendeurId, { deviceId: null as any });
+      }
+      if (dto.vendeurId) {
+        const vendeurPris = await this.succursaleRepository.findOne({
+          where: { vendeurId: dto.vendeurId },
+        });
+        if (vendeurPris) {
+          throw new ConflictException('Ce vendeur est déjà affecté à une autre succursale');
+        }
       }
     }
 
@@ -98,8 +104,12 @@ export class SuccursalesService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.succursaleRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Succursale non trouvée');
+    const succursale = await this.succursaleRepository.findOne({ where: { id } });
+    if (!succursale) throw new NotFoundException('Succursale non trouvée');
+    if (succursale.vendeurId) {
+      await this.vendeurRepository.update(succursale.vendeurId, { deviceId: null as any });
+    }
+    await this.succursaleRepository.delete(id);
   }
 
   async findBySuperviseur(superviseurId: string): Promise<any[]> {
