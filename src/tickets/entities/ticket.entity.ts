@@ -49,6 +49,9 @@ export class Ticket {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   total: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  gainTotal: number;
+
   @Column({ type: 'enum', enum: TicketStatus, default: TicketStatus.EN_ATTENTE })
   status: TicketStatus;
 

@@ -31,50 +31,54 @@ export class TicketsService {
     private readonly settingsService: SettingsService,
   ) {}
 
-  private parseBoules(ligne: CreateTicketLigneDto): { boule1: number; boule2: number; boule3: number | null; prefix: number | null } {
+  private parseBoules(ligne: CreateTicketLigneDto): { boule1: number; boule2: number | null; boule3: number | null; prefix: number | null } {
+    if (ligne.type === LottoType.BORLETTE) {
+      if (ligne.numero.length !== 2) throw new BadRequestException(`Borlette doit avoir 2 chiffres: ${ligne.numero}`);
+      return { boule1: parseInt(ligne.numero), boule2: null, boule3: null, prefix: null };
+    }
+    if (ligne.type === LottoType.MARIAGE) {
+      const num = ligne.numero.replace('*', '');
+      if (num.length !== 4) throw new BadRequestException(`Mariage doit avoir 4 chiffres: ${ligne.numero}`);
+      return { boule1: parseInt(num.substring(0, 2)), boule2: parseInt(num.substring(2, 4)), boule3: null, prefix: null };
+    }
+    if (ligne.type === LottoType.BLOTTO3) {
+      if (ligne.numero.length !== 3) throw new BadRequestException(`Lotto 3 doit avoir 3 chiffres: ${ligne.numero}`);
+      return { prefix: parseInt(ligne.numero.substring(0, 1)), boule1: parseInt(ligne.numero.substring(1, 3)), boule2: null, boule3: null };
+    }
+    if (ligne.type === LottoType.LOTTO4 || ligne.type === LottoType.BLOTTO4) {
+      if (ligne.numero.length !== 4) throw new BadRequestException(`Lotto 4 doit avoir 4 chiffres: ${ligne.numero}`);
+      return { boule1: parseInt(ligne.numero.substring(0, 2)), boule2: parseInt(ligne.numero.substring(2, 4)), boule3: null, prefix: null };
+    }
+    if (ligne.type === LottoType.LOTTO5 || ligne.type === LottoType.BLOTTO5) {
+      if (ligne.numero.length !== 5) throw new BadRequestException(`Lotto 5 doit avoir 5 chiffres: ${ligne.numero}`);
+      return { prefix: parseInt(ligne.numero.substring(0, 1)), boule1: parseInt(ligne.numero.substring(1, 3)), boule2: parseInt(ligne.numero.substring(3, 5)), boule3: null };
+    }
     if (ligne.type === LottoType.JACKPOT) {
       if (ligne.numero.length !== 6) throw new BadRequestException(`Jackpot doit avoir 6 chiffres: ${ligne.numero}`);
-      return {
-        boule1: parseInt(ligne.numero.substring(0, 2)),
-        boule2: parseInt(ligne.numero.substring(2, 4)),
-        boule3: parseInt(ligne.numero.substring(4, 6)),
-        prefix: null,
-      };
+      return { boule1: parseInt(ligne.numero.substring(0, 2)), boule2: parseInt(ligne.numero.substring(2, 4)), boule3: parseInt(ligne.numero.substring(4, 6)), prefix: null };
     }
-    if (ligne.type === LottoType.LOTTO4) {
-      if (ligne.numero.length !== 4) throw new BadRequestException(`Lotto 4 doit avoir 4 chiffres: ${ligne.numero}`);
-      return {
-        boule1: parseInt(ligne.numero.substring(0, 2)),
-        boule2: parseInt(ligne.numero.substring(2, 4)),
-        boule3: null,
-        prefix: null,
-      };
-    }
-    if (ligne.numero.length !== 5) throw new BadRequestException(`Lotto 5 doit avoir 5 chiffres: ${ligne.numero}`);
-    return {
-      prefix: parseInt(ligne.numero.substring(0, 1)),
-      boule1: parseInt(ligne.numero.substring(1, 3)),
-      boule2: parseInt(ligne.numero.substring(3, 5)),
-      boule3: null,
-    };
+    throw new BadRequestException(`Type non reconnu: ${ligne.type}`);
   }
 
   private async checkBouleRestrictions(
     boule1: number,
-    boule2: number,
+    boule2: number | null,
     borletteId: string,
     tirage: string,
     date: string,
     prix: number,
+    type: string,
   ): Promise<void> {
     const b1 = await this.bouleRepository.findOne({ where: { numero: boule1 } });
-    const b2 = await this.bouleRepository.findOne({ where: { numero: boule2 } });
+    const b2 = boule2 !== null ? await this.bouleRepository.findOne({ where: { numero: boule2 } }) : null;
 
     const b1Blocked = b1?.status === BouleStatus.BLOQUEE;
     const b2Blocked = b2?.status === BouleStatus.BLOQUEE;
 
     if (b1Blocked && b2Blocked) {
       throw new BadRequestException(`Les 2 boules ${String(boule1).padStart(2, '0')} et ${String(boule2).padStart(2, '0')} sont bloquées`);
+    } else if (b1Blocked && boule2 === null) {
+      throw new BadRequestException(`La boule ${String(boule1).padStart(2, '0')} est bloquée`);
     }
 
     const borletteEntity = await this.bouleRepository.manager
@@ -85,22 +89,23 @@ export class TicketsService {
     const lim1 = await this.limitationRepository.findOne({
       where: { bouleId: b1?.id, borlette: borletteName, tirage, date },
     });
-    const lim2 = await this.limitationRepository.findOne({
+    const lim2 = boule2 !== null ? await this.limitationRepository.findOne({
       where: { bouleId: b2?.id, borlette: borletteName, tirage, date },
-    });
+    }) : null;
 
-    const halfPrix = prix / 2;
+    const isSingleBoule = type === LottoType.BORLETTE || type === LottoType.BLOTTO3;
+    const montantAajouter = isSingleBoule ? prix : prix / 2;
 
     if (lim1) {
       const totalVentes = await this.getTotalVentes(boule1, borletteId, tirage, date);
-      if (totalVentes + halfPrix > Number(lim1.montant)) {
+      if (totalVentes + montantAajouter > Number(lim1.montant)) {
         throw new BadRequestException(`Boule ${String(boule1).padStart(2, '0')} a atteint sa limite de ${lim1.montant} HTG (déjà ${totalVentes.toLocaleString()} HTG)`);
       }
     }
 
-    if (lim2) {
+    if (lim2 && boule2 !== null) {
       const totalVentes = await this.getTotalVentes(boule2, borletteId, tirage, date);
-      if (totalVentes + halfPrix > Number(lim2.montant)) {
+      if (totalVentes + montantAajouter > Number(lim2.montant)) {
         throw new BadRequestException(`Boule ${String(boule2).padStart(2, '0')} a atteint sa limite de ${lim2.montant} HTG (déjà ${totalVentes.toLocaleString()} HTG)`);
       }
     }
@@ -114,7 +119,7 @@ export class TicketsService {
       .andWhere('t.tirage = :tirage', { tirage })
       .andWhere('t.date = :date', { date })
       .andWhere('(l.boule1 = :num OR l.boule2 = :num)', { num: bouleNum })
-      .select('COALESCE(SUM(l.prix / 2), 0)', 'total')
+      .select("COALESCE(SUM(CASE WHEN l.type IN ('borlette', 'blotto3') THEN l.prix ELSE l.prix / 2 END), 0)", 'total')
       .getRawOne();
     return parseFloat(result?.total || '0');
   }
@@ -167,7 +172,7 @@ export class TicketsService {
     });
 
     for (const l of parsedLignes) {
-      await this.checkBouleRestrictions(l.boule1, l.boule2, dto.borletteId, dto.tirage, today, l.prix);
+      await this.checkBouleRestrictions(l.boule1, l.boule2, dto.borletteId, dto.tirage, today, l.prix, l.type);
     }
 
     const total = parsedLignes.reduce((s, l) => s + l.prix, 0);
@@ -188,7 +193,7 @@ export class TicketsService {
         numero: l.numero,
         type: l.type,
         boule1: l.boule1,
-        boule2: l.boule2,
+        boule2: l.boule2 ?? undefined,
         boule3: l.boule3 ?? undefined,
         prefix: l.prefix ?? undefined,
         option: l.option,
@@ -503,6 +508,7 @@ export class TicketsService {
       tirage: t.tirage,
       date: t.date,
       total: t.total,
+      gainTotal: t.gainTotal,
       status: t.status,
       lignes: t.lignes?.map((l) => ({
         id: l.id,
@@ -513,6 +519,8 @@ export class TicketsService {
         prefix: l.prefix,
         option: l.option,
         prix: l.prix,
+        status: l.status,
+        gain: l.gain,
       })) || [],
       createdAt: t.createdAt,
     };
