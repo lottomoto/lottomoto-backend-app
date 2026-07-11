@@ -170,12 +170,14 @@ export class SuccursalesService {
 
     for (const s of succursales) {
       let ventes = 0;
+      let paiements = 0;
       let tickets = 0;
       if (s.vendeur?.userId) {
         const tix = await this.ticketRepository.find({
           where: { vendeurUserId: s.vendeur.userId, date: today },
         });
         ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
+        paiements = tix.filter(t => t.status === 'paye').reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
         tickets = tix.length;
       }
 
@@ -183,7 +185,7 @@ export class SuccursalesService {
         where: { succursaleId: s.id, date: today },
       });
       const totalCollecte = rapports.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
-      const cashACollecter = Math.max(ventes - totalCollecte, 0);
+      const cashACollecter = Math.max(ventes - paiements - totalCollecte, 0);
       cashEnMain += totalCollecte;
 
       results.push({
@@ -220,15 +222,17 @@ export class SuccursalesService {
     const today = new Date().toISOString().split('T')[0];
 
     let ventes = 0;
+    let paiements = 0;
     if (succursale.vendeur?.userId) {
       const tix = await this.ticketRepository.find({
         where: { vendeurUserId: succursale.vendeur.userId, date: today },
       });
       ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
+      paiements = tix.filter(t => t.status === 'paye').reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
     }
     const existing = await this.rapportRepository.find({ where: { succursaleId, date: today } });
     const dejaCollecte = existing.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
-    const cashACollecter = Math.max(ventes - dejaCollecte, 0);
+    const cashACollecter = Math.max(ventes - paiements - dejaCollecte, 0);
 
     const cashRecu = Math.min(dto.cashRecu, cashACollecter);
 

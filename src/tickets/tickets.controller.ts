@@ -92,14 +92,14 @@ export class TicketsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR, UserRole.COMPTABLE, UserRole.SUPPORT)
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR, UserRole.COMPTABLE, UserRole.SUPPORT, UserRole.VENDEUR)
   findOne(@Param('id') id: string) {
     return this.ticketsService.findOne(id);
   }
 
   @Patch(':id/pay')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.COMPTABLE)
+  @Roles(UserRole.ADMIN, UserRole.COMPTABLE, UserRole.VENDEUR)
   async payTicket(@Request() req: any, @Param('id') id: string) {
     const result = await this.ticketsService.payTicket(id);
     this.logsService.create({

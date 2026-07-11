@@ -213,18 +213,18 @@ export class TicketsService {
     return tickets.map((t) => this.format(t));
   }
 
-  async findByVendeur(vendeurUserId: string): Promise<any[]> {
+  async findByVendeur(vendeurUserId: string): Promise<any> {
     const tickets = await this.ticketRepository.find({
       where: { vendeurUserId },
-      relations: { borlette: true, lignes: true },
+      relations: { borlette: true, lignes: true, vendeurUser: true },
       order: { createdAt: 'DESC' },
     });
     return tickets.map((t) => this.format(t));
   }
 
-  async findOne(id: string): Promise<any> {
+  async findOne(idOrRef: string): Promise<any> {
     const ticket = await this.ticketRepository.findOne({
-      where: { id },
+      where: [{ id: idOrRef }, { ref: idOrRef }],
       relations: { borlette: true, lignes: true, vendeurUser: true },
     });
     if (!ticket) throw new NotFoundException('Ticket non trouvé');
@@ -297,7 +297,13 @@ export class TicketsService {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      last7.push(d.toISOString().split('T')[0]);
+      const formatter = new Intl.DateTimeFormat('fr-CA', {
+        timeZone: 'America/Port-au-Prince',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      last7.push(formatter.format(d));
     }
     const weekTickets = await this.ticketRepository.find({
       where: last7.map(date => ({ vendeurUserId, date })),
