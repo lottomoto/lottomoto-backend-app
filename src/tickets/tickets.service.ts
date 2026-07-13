@@ -352,8 +352,10 @@ export class TicketsService {
 
     const recettes = tickets.reduce((s, t) => s + Number(t.total), 0);
     const payes = tickets.filter(t => t.status === TicketStatus.PAYE);
-    const paiementsTotal = payes.reduce((s, t) => s + Number(t.total), 0);
-    const benefice = recettes - paiementsTotal;
+    const paiementsTotal = payes.reduce((s, t) => s + Number(t.gainTotal || 0), 0);
+    const gagnes = tickets.filter(t => t.status === TicketStatus.GAGNE);
+    const aPayer = gagnes.reduce((s, t) => s + Number(t.gainTotal || 0), 0);
+    const benefice = recettes - (paiementsTotal + aPayer);
     const ticketCount = tickets.length;
 
     const vendeurMap: Record<string, { nom: string; ventes: number; tickets: number }> = {};
@@ -373,28 +375,32 @@ export class TicketsService {
       .sort((a, b) => b.ventes - a.ventes)
       .slice(0, 5);
 
-    const sessionMap: Record<string, { tickets: number; recettes: number; paiements: number; tirage: string; borlette: string }> = {};
+    const sessionMap: Record<string, { tickets: number; recettes: number; paiements: number; aPayer: number; tirage: string; borlette: string }> = {};
     for (const t of tickets) {
       const bName = t.borlette?.nom || 'Inconnu';
       const key = `${bName} · ${t.tirage}`;
-      if (!sessionMap[key]) sessionMap[key] = { tickets: 0, recettes: 0, paiements: 0, tirage: t.tirage, borlette: bName };
+      if (!sessionMap[key]) sessionMap[key] = { tickets: 0, recettes: 0, paiements: 0, aPayer: 0, tirage: t.tirage, borlette: bName };
       sessionMap[key].tickets += 1;
       sessionMap[key].recettes += Number(t.total);
       if (t.status === TicketStatus.PAYE) {
         sessionMap[key].paiements += Number(t.gainTotal || 0);
+      } else if (t.status === TicketStatus.GAGNE) {
+        sessionMap[key].aPayer += Number(t.gainTotal || 0);
       }
     }
     const parTirage = Object.entries(sessionMap)
-      .map(([nom, d]) => ({ nom, ...d, benefice: d.recettes - d.paiements }))
+      .map(([nom, d]) => ({ nom, ...d, benefice: d.recettes - (d.paiements + d.aPayer) }))
       .sort((a, b) => b.recettes - a.recettes);
 
-    const chartMap: Record<string, { recettes: number; paiements: number; benefice: number }> = {};
+    const chartMap: Record<string, { recettes: number; paiements: number; aPayer: number; benefice: number }> = {};
     for (const t of tickets) {
       const d = t.date;
-      if (!chartMap[d]) chartMap[d] = { recettes: 0, paiements: 0, benefice: 0 };
+      if (!chartMap[d]) chartMap[d] = { recettes: 0, paiements: 0, aPayer: 0, benefice: 0 };
       chartMap[d].recettes += Number(t.total);
       if (t.status === TicketStatus.PAYE) {
         chartMap[d].paiements += Number(t.gainTotal || 0);
+      } else if (t.status === TicketStatus.GAGNE) {
+        chartMap[d].aPayer += Number(t.gainTotal || 0);
       }
     }
     const chartData = Object.entries(chartMap)
@@ -405,7 +411,8 @@ export class TicketsService {
           date: parts.length === 3 ? `${parts[2]}/${parts[1]}` : date,
           recettes: d.recettes,
           paiements: d.paiements,
-          benefice: d.recettes - d.paiements,
+          aPayer: d.aPayer,
+          benefice: d.recettes - (d.paiements + d.aPayer),
         };
       });
 
@@ -474,7 +481,7 @@ export class TicketsService {
     const totalVendeurs = await this.vendeurRepository.count();
 
     return {
-      recettes, paiements: paiementsTotal, benefice, ticketCount,
+      recettes, paiements: paiementsTotal, aPayer, benefice, ticketCount,
       vendeursActifs: Object.keys(vendeurMap).length,
       totalVendeurs,
       topVendeurs, parTirage, chartData,
