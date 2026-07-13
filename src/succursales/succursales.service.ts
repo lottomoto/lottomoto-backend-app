@@ -407,7 +407,7 @@ export class SuccursalesService {
         ? { id: s.superviseur.id, nom: `${s.superviseur.firstname} ${s.superviseur.lastname}` }
         : null,
       vendeur: s.vendeur
-        ? { id: s.vendeur.id, nom: `${s.vendeur.user?.firstname || ''} ${s.vendeur.user?.lastname || ''}`.trim(), username: s.vendeur.username }
+        ? { id: s.vendeur.id, userId: s.vendeur.userId, nom: `${s.vendeur.user?.firstname || ''} ${s.vendeur.user?.lastname || ''}`.trim(), username: s.vendeur.username }
         : null,
       createdAt: s.createdAt,
     };

@@ -373,26 +373,19 @@ export class TicketsService {
       .sort((a, b) => b.ventes - a.ventes)
       .slice(0, 5);
 
-    const tirageMap: Record<string, { tickets: number; montant: number }> = {};
-    const todayTickets = tickets.filter(t => t.date === today);
-    for (const t of todayTickets) {
-      if (!tirageMap[t.tirage]) tirageMap[t.tirage] = { tickets: 0, montant: 0 };
-      tirageMap[t.tirage].tickets += 1;
-      tirageMap[t.tirage].montant += Number(t.total);
-    }
-    const tiragesJour = Object.entries(tirageMap).map(([nom, d]) => ({ nom, ...d }));
-
-    const borletteMap: Record<string, { nom: string; recettes: number; paiements: number }> = {};
+    const sessionMap: Record<string, { tickets: number; recettes: number; paiements: number; tirage: string; borlette: string }> = {};
     for (const t of tickets) {
       const bName = t.borlette?.nom || 'Inconnu';
-      if (!borletteMap[bName]) borletteMap[bName] = { nom: bName, recettes: 0, paiements: 0 };
-      borletteMap[bName].recettes += Number(t.total);
+      const key = `${bName} · ${t.tirage}`;
+      if (!sessionMap[key]) sessionMap[key] = { tickets: 0, recettes: 0, paiements: 0, tirage: t.tirage, borlette: bName };
+      sessionMap[key].tickets += 1;
+      sessionMap[key].recettes += Number(t.total);
       if (t.status === TicketStatus.PAYE) {
-        borletteMap[bName].paiements += Number(t.total);
+        sessionMap[key].paiements += Number(t.gainTotal || 0);
       }
     }
-    const parBorlette = Object.values(borletteMap)
-      .map(b => ({ ...b, benefice: b.recettes - b.paiements }))
+    const parTirage = Object.entries(sessionMap)
+      .map(([nom, d]) => ({ nom, ...d, benefice: d.recettes - d.paiements }))
       .sort((a, b) => b.recettes - a.recettes);
 
     const chartMap: Record<string, { recettes: number; paiements: number; benefice: number }> = {};
@@ -401,17 +394,20 @@ export class TicketsService {
       if (!chartMap[d]) chartMap[d] = { recettes: 0, paiements: 0, benefice: 0 };
       chartMap[d].recettes += Number(t.total);
       if (t.status === TicketStatus.PAYE) {
-        chartMap[d].paiements += Number(t.total);
+        chartMap[d].paiements += Number(t.gainTotal || 0);
       }
     }
     const chartData = Object.entries(chartMap)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, d]) => ({
-        date: new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-        recettes: d.recettes,
-        paiements: d.paiements,
-        benefice: d.recettes - d.paiements,
-      }));
+      .map(([date, d]) => {
+        const parts = date.split('-');
+        return {
+          date: parts.length === 3 ? `${parts[2]}/${parts[1]}` : date,
+          recettes: d.recettes,
+          paiements: d.paiements,
+          benefice: d.recettes - d.paiements,
+        };
+      });
 
     // Revenue by tirage per day (for area chart)
     const tirageNames = [...new Set(tickets.map(t => t.tirage))];
@@ -423,12 +419,16 @@ export class TicketsService {
     }
     const revenueByTirage = Object.entries(revenueByTirageMap)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, tirages]) => ({
-        date: new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-        ...tirages,
-      }));
+      .map(([date, tirages]) => {
+        const parts = date.split('-');
+        return {
+          date: parts.length === 3 ? `${parts[2]}/${parts[1]}` : date,
+          ...tirages,
+        };
+      });
 
     // Lotto type split
+    const todayTickets = tickets.filter(t => t.date === today);
     let lotto4 = 0;
     let lotto5 = 0;
     for (const t of todayTickets) {
@@ -477,7 +477,7 @@ export class TicketsService {
       recettes, paiements: paiementsTotal, benefice, ticketCount,
       vendeursActifs: Object.keys(vendeurMap).length,
       totalVendeurs,
-      topVendeurs, tiragesJour, parBorlette, chartData,
+      topVendeurs, parTirage, chartData,
       revenueByTirage, tirageNames,
       lotto4, lotto5, topBoules, boulesBloquees, recentTickets,
       tirageActif: activeTirage?.nom || null,
