@@ -189,6 +189,7 @@ export class TicketsService {
       date: today,
       total,
       status: TicketStatus.EN_ATTENTE,
+      createdAt: new Date(),
       lignes: parsedLignes.map((l) => this.ligneRepository.create({
         numero: l.numero,
         type: l.type,
