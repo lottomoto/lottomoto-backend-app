@@ -52,6 +52,7 @@ import { LogsModule } from './logs/logs.module';
         username: config.get<string>('DB_USERNAME'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_NAME'),
+        timezone: 'Z',
         autoLoadEntities: true,
         synchronize: config.get<string>('TYPEORM_SYNCHRONIZE') === 'true',
       }),
