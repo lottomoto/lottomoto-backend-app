@@ -383,7 +383,9 @@ export class TicketsService {
     const sessionMap: Record<string, { tickets: number; recettes: number; paiements: number; aPayer: number; tirage: string; borlette: string }> = {};
     for (const t of tickets) {
       const bName = t.borlette?.nom || 'Inconnu';
-      const key = `${bName} · ${t.tirage}`;
+      const dateParts = t.date.split('-');
+      const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0].slice(2)}` : t.date;
+      const key = `${bName} · ${t.tirage} (${formattedDate})`;
       if (!sessionMap[key]) sessionMap[key] = { tickets: 0, recettes: 0, paiements: 0, aPayer: 0, tirage: t.tirage, borlette: bName };
       sessionMap[key].tickets += 1;
       sessionMap[key].recettes += Number(t.total);
