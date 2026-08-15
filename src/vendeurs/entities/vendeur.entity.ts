@@ -29,5 +29,5 @@ export class Vendeur {
   commission: number;
 
   @Column({ nullable: true })
-  deviceId: string;
+  deviceId: string | null;
 }

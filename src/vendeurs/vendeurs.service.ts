@@ -134,7 +134,7 @@ export class VendeursService {
   }
 
   async resetDeviceId(vendeurId: string): Promise<void> {
-    await this.vendeurRepository.update(vendeurId, { deviceId: undefined as any });
+    await this.vendeurRepository.update(vendeurId, { deviceId: null });
   }
 
   async changePinByUserId(userId: string, newPin: string): Promise<any> {
