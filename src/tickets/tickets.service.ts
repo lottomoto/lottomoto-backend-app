@@ -329,6 +329,11 @@ export class TicketsService {
     if (customDateFrom && customDateTo) {
       dateFrom = customDateFrom;
       dateTo = customDateTo;
+    } else if (periode === 'hier') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 1);
+      dateFrom = d.toISOString().split('T')[0];
+      dateTo = dateFrom;
     } else if (periode === 'semaine') {
       const d = new Date(now);
       d.setDate(d.getDate() - d.getDay());
