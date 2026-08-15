@@ -10,7 +10,16 @@ import { ComptableCollection } from './entities/comptable-collection.entity';
 import { User } from '../users/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Succursale, SuccursaleRapport, Ticket, Vendeur, ComptableCollection, User])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Succursale,
+      SuccursaleRapport,
+      Ticket,
+      Vendeur,
+      ComptableCollection,
+      User,
+    ]),
+  ],
   controllers: [SuccursalesController],
   providers: [SuccursalesService],
   exports: [SuccursalesService],

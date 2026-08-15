@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Succursale } from './entities/succursale.entity';
@@ -40,7 +44,9 @@ export class SuccursalesService {
         where: { vendeurId: dto.vendeurId },
       });
       if (vendeurPris) {
-        throw new ConflictException('Ce vendeur est déjà affecté à une autre succursale');
+        throw new ConflictException(
+          'Ce vendeur est déjà affecté à une autre succursale',
+        );
       }
     }
 
@@ -67,7 +73,9 @@ export class SuccursalesService {
   }
 
   async update(id: string, dto: UpdateSuccursaleDto): Promise<any> {
-    const succursale = await this.succursaleRepository.findOne({ where: { id } });
+    const succursale = await this.succursaleRepository.findOne({
+      where: { id },
+    });
     if (!succursale) throw new NotFoundException('Succursale non trouvée');
 
     if (dto.materielId && dto.materielId !== succursale.materielId) {
@@ -80,14 +88,18 @@ export class SuccursalesService {
     if (dto.vendeurId !== undefined && dto.vendeurId !== succursale.vendeurId) {
       // Clear deviceId of old vendor when unlinked from succursale
       if (succursale.vendeurId) {
-        await this.vendeurRepository.update(succursale.vendeurId, { deviceId: null as any });
+        await this.vendeurRepository.update(succursale.vendeurId, {
+          deviceId: null,
+        });
       }
       if (dto.vendeurId) {
         const vendeurPris = await this.succursaleRepository.findOne({
           where: { vendeurId: dto.vendeurId },
         });
         if (vendeurPris) {
-          throw new ConflictException('Ce vendeur est déjà affecté à une autre succursale');
+          throw new ConflictException(
+            'Ce vendeur est déjà affecté à une autre succursale',
+          );
         }
       }
     }
@@ -97,17 +109,25 @@ export class SuccursalesService {
   }
 
   async toggleActive(id: string): Promise<any> {
-    const succursale = await this.succursaleRepository.findOne({ where: { id } });
+    const succursale = await this.succursaleRepository.findOne({
+      where: { id },
+    });
     if (!succursale) throw new NotFoundException('Succursale non trouvée');
-    await this.succursaleRepository.update(id, { isActive: !succursale.isActive });
+    await this.succursaleRepository.update(id, {
+      isActive: !succursale.isActive,
+    });
     return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
-    const succursale = await this.succursaleRepository.findOne({ where: { id } });
+    const succursale = await this.succursaleRepository.findOne({
+      where: { id },
+    });
     if (!succursale) throw new NotFoundException('Succursale non trouvée');
     if (succursale.vendeurId) {
-      await this.vendeurRepository.update(succursale.vendeurId, { deviceId: null as any });
+      await this.vendeurRepository.update(succursale.vendeurId, {
+        deviceId: null,
+      });
     }
     await this.succursaleRepository.delete(id);
   }
@@ -164,7 +184,17 @@ export class SuccursalesService {
     });
 
     const today = new Date().toISOString().split('T')[0];
-    const results: { id: string; nom: string; isActive: boolean; vendeur: string | null; ventes: number; tickets: number; cashACollecter: number; totalCollecte: number; dette: number }[] = [];
+    const results: {
+      id: string;
+      nom: string;
+      isActive: boolean;
+      vendeur: string | null;
+      ventes: number;
+      tickets: number;
+      cashACollecter: number;
+      totalCollecte: number;
+      dette: number;
+    }[] = [];
 
     let cashEnMain = 0;
 
@@ -178,16 +208,26 @@ export class SuccursalesService {
           where: { vendeurUserId: s.vendeur.userId, date: today },
         });
         ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
-        paiements = tix.filter(t => t.status === 'paye').reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
-        aPayer = tix.filter(t => t.status === 'gagne').reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
+        paiements = tix
+          .filter((t) => t.status === 'paye')
+          .reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
+        aPayer = tix
+          .filter((t) => t.status === 'gagne')
+          .reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
         tickets = tix.length;
       }
 
       const rapports = await this.rapportRepository.find({
         where: { succursaleId: s.id, date: today },
       });
-      const totalCollecte = rapports.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
-      const cashACollecter = Math.max(ventes - paiements - aPayer - totalCollecte, 0);
+      const totalCollecte = rapports.reduce(
+        (sum, r) => sum + Number(r.cashCollecte),
+        0,
+      );
+      const cashACollecter = Math.max(
+        ventes - paiements - aPayer - totalCollecte,
+        0,
+      );
       cashEnMain += totalCollecte;
 
       results.push({
@@ -214,7 +254,10 @@ export class SuccursalesService {
     };
   }
 
-  async collecterCash(succursaleId: string, dto: { cashRecu: number; dette?: number; notes?: string }): Promise<any> {
+  async collecterCash(
+    succursaleId: string,
+    dto: { cashRecu: number; dette?: number; notes?: string },
+  ): Promise<any> {
     const succursale = await this.succursaleRepository.findOne({
       where: { id: succursaleId },
       relations: { vendeur: true },
@@ -231,12 +274,24 @@ export class SuccursalesService {
         where: { vendeurUserId: succursale.vendeur.userId, date: today },
       });
       ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
-      paiements = tix.filter(t => t.status === 'paye').reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
-      aPayer = tix.filter(t => t.status === 'gagne').reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
+      paiements = tix
+        .filter((t) => t.status === 'paye')
+        .reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
+      aPayer = tix
+        .filter((t) => t.status === 'gagne')
+        .reduce((sum, t) => sum + Number(t.gainTotal || 0), 0);
     }
-    const existing = await this.rapportRepository.find({ where: { succursaleId, date: today } });
-    const dejaCollecte = existing.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
-    const cashACollecter = Math.max(ventes - paiements - aPayer - dejaCollecte, 0);
+    const existing = await this.rapportRepository.find({
+      where: { succursaleId, date: today },
+    });
+    const dejaCollecte = existing.reduce(
+      (sum, r) => sum + Number(r.cashCollecte),
+      0,
+    );
+    const cashACollecter = Math.max(
+      ventes - paiements - aPayer - dejaCollecte,
+      0,
+    );
 
     const cashRecu = Math.min(dto.cashRecu, cashACollecter);
 
@@ -274,15 +329,20 @@ export class SuccursalesService {
 
     return {
       succursale: this.format(succursale),
-      rapport: rapport ? {
-        cashCollecte: Number(rapport.cashCollecte),
-        dette: Number(rapport.dette),
-        notes: rapport.notes || '',
-      } : { cashCollecte: 0, dette: 0, notes: '' },
+      rapport: rapport
+        ? {
+            cashCollecte: Number(rapport.cashCollecte),
+            dette: Number(rapport.dette),
+            notes: rapport.notes || '',
+          }
+        : { cashCollecte: 0, dette: 0, notes: '' },
     };
   }
 
-  async saveVendeurRapport(userId: string, dto: { cashCollecte: number; dette: number; notes?: string }): Promise<any> {
+  async saveVendeurRapport(
+    userId: string,
+    dto: { cashCollecte: number; dette: number; notes?: string },
+  ): Promise<any> {
     const vendeur = await this.vendeurRepository.findOne({ where: { userId } });
     if (!vendeur) throw new NotFoundException('Vendeur non trouvé');
     const succursale = await this.succursaleRepository.findOne({
@@ -303,9 +363,17 @@ export class SuccursalesService {
 
   async getComptableDashboard(comptableId: string): Promise<any> {
     const today = new Date().toISOString().split('T')[0];
-    const superviseurs = await this.userRepository.find({ where: { role: UserRole.SUPERVISEUR, isActive: true } });
+    const superviseurs = await this.userRepository.find({
+      where: { role: UserRole.SUPERVISEUR, isActive: true },
+    });
 
-    const results: { id: string; nom: string; cashEnMain: number; totalCollecte: number; cashACollecter: number }[] = [];
+    const results: {
+      id: string;
+      nom: string;
+      cashEnMain: number;
+      totalCollecte: number;
+      cashACollecter: number;
+    }[] = [];
     let myCashEnMain = 0;
 
     for (const sup of superviseurs) {
@@ -317,20 +385,37 @@ export class SuccursalesService {
       let supCashEnMain = 0;
       for (const s of succursales) {
         if (s.vendeur?.userId) {
-          const tix = await this.ticketRepository.find({ where: { vendeurUserId: s.vendeur.userId, date: today } });
+          const tix = await this.ticketRepository.find({
+            where: { vendeurUserId: s.vendeur.userId, date: today },
+          });
           const ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
-          const rapports = await this.rapportRepository.find({ where: { succursaleId: s.id, date: today } });
-          const collecte = rapports.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
+          const rapports = await this.rapportRepository.find({
+            where: { succursaleId: s.id, date: today },
+          });
+          const collecte = rapports.reduce(
+            (sum, r) => sum + Number(r.cashCollecte),
+            0,
+          );
           supCashEnMain += collecte;
         }
       }
 
-      const collections = await this.collectionRepository.find({ where: { superviseurId: sup.id, date: today } });
-      const dejaCollecte = collections.reduce((sum, c) => sum + Number(c.cashRecu), 0);
+      const collections = await this.collectionRepository.find({
+        where: { superviseurId: sup.id, date: today },
+      });
+      const dejaCollecte = collections.reduce(
+        (sum, c) => sum + Number(c.cashRecu),
+        0,
+      );
       const cashACollecter = Math.max(supCashEnMain - dejaCollecte, 0);
 
-      const myCollections = collections.filter(c => c.comptableId === comptableId);
-      myCashEnMain += myCollections.reduce((sum, c) => sum + Number(c.cashRecu), 0);
+      const myCollections = collections.filter(
+        (c) => c.comptableId === comptableId,
+      );
+      myCashEnMain += myCollections.reduce(
+        (sum, c) => sum + Number(c.cashRecu),
+        0,
+      );
 
       results.push({
         id: sup.id,
@@ -348,15 +433,25 @@ export class SuccursalesService {
       .andWhere('c.date = :today', { today })
       .select('COALESCE(SUM(c.dette), 0)', 'total')
       .getRawOne()
-      .then(r => parseFloat(r?.total || '0'));
+      .then((r) => parseFloat(r?.total || '0'));
 
     return {
-      superviseurs: results.filter(r => r.cashEnMain > 0 || r.cashACollecter > 0),
-      totaux: { cashEnMain: myCashEnMain, aCollecter: totalACollecter, dette: totalDette },
+      superviseurs: results.filter(
+        (r) => r.cashEnMain > 0 || r.cashACollecter > 0,
+      ),
+      totaux: {
+        cashEnMain: myCashEnMain,
+        aCollecter: totalACollecter,
+        dette: totalDette,
+      },
     };
   }
 
-  async comptableCollecter(comptableId: string, superviseurId: string, dto: { cashRecu: number; notes?: string }): Promise<any> {
+  async comptableCollecter(
+    comptableId: string,
+    superviseurId: string,
+    dto: { cashRecu: number; notes?: string },
+  ): Promise<any> {
     const today = new Date().toISOString().split('T')[0];
 
     const succursales = await this.succursaleRepository.find({
@@ -367,15 +462,27 @@ export class SuccursalesService {
     let supCashEnMain = 0;
     for (const s of succursales) {
       if (s.vendeur?.userId) {
-        const tix = await this.ticketRepository.find({ where: { vendeurUserId: s.vendeur.userId, date: today } });
+        const tix = await this.ticketRepository.find({
+          where: { vendeurUserId: s.vendeur.userId, date: today },
+        });
         const ventes = tix.reduce((sum, t) => sum + Number(t.total), 0);
-        const rapports = await this.rapportRepository.find({ where: { succursaleId: s.id, date: today } });
-        supCashEnMain += rapports.reduce((sum, r) => sum + Number(r.cashCollecte), 0);
+        const rapports = await this.rapportRepository.find({
+          where: { succursaleId: s.id, date: today },
+        });
+        supCashEnMain += rapports.reduce(
+          (sum, r) => sum + Number(r.cashCollecte),
+          0,
+        );
       }
     }
 
-    const existingCollections = await this.collectionRepository.find({ where: { superviseurId, date: today } });
-    const dejaCollecte = existingCollections.reduce((sum, c) => sum + Number(c.cashRecu), 0);
+    const existingCollections = await this.collectionRepository.find({
+      where: { superviseurId, date: today },
+    });
+    const dejaCollecte = existingCollections.reduce(
+      (sum, c) => sum + Number(c.cashRecu),
+      0,
+    );
     const cashACollecter = Math.max(supCashEnMain - dejaCollecte, 0);
     const cashRecu = Math.min(dto.cashRecu, cashACollecter);
     const dette = Math.max(cashACollecter - cashRecu, 0);
@@ -408,10 +515,18 @@ export class SuccursalesService {
       materielId: s.materielId,
       isActive: s.isActive,
       superviseur: s.superviseur
-        ? { id: s.superviseur.id, nom: `${s.superviseur.firstname} ${s.superviseur.lastname}` }
+        ? {
+            id: s.superviseur.id,
+            nom: `${s.superviseur.firstname} ${s.superviseur.lastname}`,
+          }
         : null,
       vendeur: s.vendeur
-        ? { id: s.vendeur.id, userId: s.vendeur.userId, nom: `${s.vendeur.user?.firstname || ''} ${s.vendeur.user?.lastname || ''}`.trim(), username: s.vendeur.username }
+        ? {
+            id: s.vendeur.id,
+            userId: s.vendeur.userId,
+            nom: `${s.vendeur.user?.firstname || ''} ${s.vendeur.user?.lastname || ''}`.trim(),
+            username: s.vendeur.username,
+          }
         : null,
       createdAt: s.createdAt,
     };

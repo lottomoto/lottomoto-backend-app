@@ -11,10 +11,11 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      const allowedOrigins = configService
-        .get<string>('ALLOWED_HOST')
-        ?.split(',')
-        .map((o) => o.trim()) || [];
+      const allowedOrigins =
+        configService
+          .get<string>('ALLOWED_HOST')
+          ?.split(',')
+          .map((o) => o.trim()) || [];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {

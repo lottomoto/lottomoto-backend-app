@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -68,7 +72,10 @@ export class UsersService {
     return this.userRepository.findOne({ where: { phone } });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<Partial<User>> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Partial<User>> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Utilisateur non trouvé');
 
@@ -93,7 +100,13 @@ export class UsersService {
   }
 
   private sanitize(user: User): Partial<User> {
-    const { passwordHash, pin, resetPasswordToken, resetPasswordExpires, ...rest } = user;
+    const {
+      passwordHash,
+      pin,
+      resetPasswordToken,
+      resetPasswordExpires,
+      ...rest
+    } = user;
     return rest;
   }
 }

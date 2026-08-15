@@ -38,7 +38,9 @@ import { LogsModule } from './logs/logs.module';
         CLOUDINARY_API_KEY: Joi.string().allow('').default(''),
         CLOUDINARY_API_SECRET: Joi.string().allow('').default(''),
         RESEND_API_KEY: Joi.string().allow('').default(''),
-        TYPEORM_SYNCHRONIZE: Joi.string().valid('true', 'false').default('false'),
+        TYPEORM_SYNCHRONIZE: Joi.string()
+          .valid('true', 'false')
+          .default('false'),
         COOKIE_SECURE: Joi.string().valid('true', 'false').default('false'),
       }),
     }),

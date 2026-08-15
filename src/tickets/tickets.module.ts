@@ -13,11 +13,19 @@ import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Ticket, TicketLigne, Boule, Limitation, Tirage, Vendeur, Succursale]),
+    TypeOrmModule.forFeature([
+      Ticket,
+      TicketLigne,
+      Boule,
+      Limitation,
+      Tirage,
+      Vendeur,
+      Succursale,
+    ]),
     SettingsModule,
   ],
   controllers: [TicketsController],
   providers: [TicketsService],
   exports: [TicketsService],
 })
-export class TicketsModule { }
+export class TicketsModule {}

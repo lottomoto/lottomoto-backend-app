@@ -4,7 +4,10 @@ import { Readable } from 'stream';
 
 @Injectable()
 export class UploadService {
-  async uploadImage(file: Express.Multer.File, folder: string = 'ldml'): Promise<string> {
+  async uploadImage(
+    file: Express.Multer.File,
+    folder: string = 'ldml',
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
         { folder, resource_type: 'image' },

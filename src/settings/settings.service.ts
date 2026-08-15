@@ -60,7 +60,9 @@ export class SettingsService implements OnModuleInit {
     return setting?.value ?? null;
   }
 
-  async updateMany(updates: Record<string, string>): Promise<Record<string, string>> {
+  async updateMany(
+    updates: Record<string, string>,
+  ): Promise<Record<string, string>> {
     for (const [key, value] of Object.entries(updates)) {
       const existing = await this.settingRepository.findOne({ where: { key } });
       if (existing) {

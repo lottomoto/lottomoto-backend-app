@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -17,13 +21,17 @@ export class VendeursService {
   ) {}
 
   async create(dto: CreateVendeurDto): Promise<any> {
-    const existingUsername = await this.vendeurRepository.findOne({ where: { username: dto.username } });
+    const existingUsername = await this.vendeurRepository.findOne({
+      where: { username: dto.username },
+    });
     if (existingUsername) {
-      throw new ConflictException('Ce nom d\'utilisateur existe déjà');
+      throw new ConflictException("Ce nom d'utilisateur existe déjà");
     }
 
     if (dto.phone) {
-      const existingPhone = await this.userRepository.findOne({ where: { phone: dto.phone } });
+      const existingPhone = await this.userRepository.findOne({
+        where: { phone: dto.phone },
+      });
       if (existingPhone) {
         throw new ConflictException('Ce numéro de téléphone existe déjà');
       }
@@ -53,7 +61,9 @@ export class VendeursService {
   }
 
   async findAll(): Promise<any[]> {
-    const vendeurs = await this.vendeurRepository.find({ relations: { user: true } });
+    const vendeurs = await this.vendeurRepository.find({
+      relations: { user: true },
+    });
     return vendeurs.map((v) => this.formatVendeur(v, v.user));
   }
 
@@ -78,7 +88,9 @@ export class VendeursService {
       if (dto.firstname) userUpdates.firstname = dto.firstname;
       if (dto.lastname) userUpdates.lastname = dto.lastname;
       if (dto.phone) {
-        const existingPhone = await this.userRepository.findOne({ where: { phone: dto.phone } });
+        const existingPhone = await this.userRepository.findOne({
+          where: { phone: dto.phone },
+        });
         if (existingPhone && existingPhone.id !== vendeur.userId) {
           throw new ConflictException('Ce numéro de téléphone existe déjà');
         }
@@ -95,7 +107,8 @@ export class VendeursService {
 
     const vendeurUpdates: any = {};
     if (dto.adresse !== undefined) vendeurUpdates.adresse = dto.adresse;
-    if (dto.commission !== undefined) vendeurUpdates.commission = dto.commission;
+    if (dto.commission !== undefined)
+      vendeurUpdates.commission = dto.commission;
     if (Object.keys(vendeurUpdates).length > 0) {
       await this.vendeurRepository.update(id, vendeurUpdates);
     }
@@ -116,11 +129,15 @@ export class VendeursService {
       relations: { user: true },
     });
     if (!vendeur) throw new NotFoundException('Vendeur non trouvé');
-    await this.userRepository.update(vendeur.userId, { isActive: !vendeur.user.isActive });
+    await this.userRepository.update(vendeur.userId, {
+      isActive: !vendeur.user.isActive,
+    });
     return this.findOne(id);
   }
 
-  async findByUsername(username: string): Promise<{ vendeur: Vendeur; user: User } | null> {
+  async findByUsername(
+    username: string,
+  ): Promise<{ vendeur: Vendeur; user: User } | null> {
     const vendeur = await this.vendeurRepository.findOne({
       where: { username },
       relations: { user: true },

@@ -10,7 +10,13 @@ export class LogsService {
     private readonly logRepository: Repository<Log>,
   ) {}
 
-  async create(data: { action: ActionType; entityType: string; entityId?: string; details?: any; userId?: string }) {
+  async create(data: {
+    action: ActionType;
+    entityType: string;
+    entityId?: string;
+    details?: any;
+    userId?: string;
+  }) {
     try {
       const log = this.logRepository.create(data);
       return await this.logRepository.save(log);

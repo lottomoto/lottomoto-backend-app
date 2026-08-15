@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Borlette } from './entities/borlette.entity';
@@ -16,7 +20,9 @@ export class BorlettesService {
   ) {}
 
   async create(dto: CreateBorletteDto): Promise<Borlette> {
-    const existing = await this.borletteRepository.findOne({ where: { code: dto.code } });
+    const existing = await this.borletteRepository.findOne({
+      where: { code: dto.code },
+    });
     if (existing) throw new ConflictException('Ce code existe déjà');
 
     const borlette = this.borletteRepository.create({
@@ -27,7 +33,12 @@ export class BorlettesService {
 
     if (dto.tirages?.length) {
       const tirages = dto.tirages.map((t) =>
-        this.tirageRepository.create({ nom: t.nom, ouverture: t.ouverture, fermeture: t.fermeture, borletteId: saved.id }),
+        this.tirageRepository.create({
+          nom: t.nom,
+          ouverture: t.ouverture,
+          fermeture: t.fermeture,
+          borletteId: saved.id,
+        }),
       );
       await this.tirageRepository.save(tirages);
     }
@@ -55,7 +66,9 @@ export class BorlettesService {
     const borlette = await this.findOne(id);
 
     if (dto.code && dto.code !== borlette.code) {
-      const existing = await this.borletteRepository.findOne({ where: { code: dto.code } });
+      const existing = await this.borletteRepository.findOne({
+        where: { code: dto.code },
+      });
       if (existing) throw new ConflictException('Ce code existe déjà');
     }
 
@@ -66,7 +79,12 @@ export class BorlettesService {
     if (dto.tirages) {
       await this.tirageRepository.delete({ borletteId: id });
       const tirages = dto.tirages.map((t) =>
-        this.tirageRepository.create({ nom: t.nom, ouverture: t.ouverture, fermeture: t.fermeture, borletteId: id }),
+        this.tirageRepository.create({
+          nom: t.nom,
+          ouverture: t.ouverture,
+          fermeture: t.fermeture,
+          borletteId: id,
+        }),
       );
       await this.tirageRepository.save(tirages);
     }
@@ -83,6 +101,7 @@ export class BorlettesService {
 
   async remove(id: string): Promise<void> {
     const result = await this.borletteRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Borlette non trouvée');
+    if (result.affected === 0)
+      throw new NotFoundException('Borlette non trouvée');
   }
 }

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { LimitationsService } from './limitations.service';
 import { CreateLimitationDto } from './dto/create-limitation.dto';
 import { CreateLimitationAllDto } from './dto/create-limitation-all.dto';

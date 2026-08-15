@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketsService } from './tickets.service';
@@ -66,21 +77,43 @@ export class TicketsController {
         relations: { vendeur: true },
       });
       const vendeurUserIds = succursales
-        .filter(s => s.vendeur?.userId)
-        .map(s => s.vendeur!.userId);
+        .filter((s) => s.vendeur?.userId)
+        .map((s) => s.vendeur.userId);
       if (vendeurUserIds.length === 0) {
         return {
-          recettes: 0, paiements: 0, benefice: 0, ticketCount: 0,
-          vendeursActifs: 0, topVendeurs: [], tiragesJour: [],
-          parBorlette: [], chartData: [], revenueByTirage: [],
-          tirageNames: [], lotto4: 0, lotto5: 0, topBoules: [],
-          boulesBloquees: 0, recentTickets: [], tirageActif: null,
+          recettes: 0,
+          paiements: 0,
+          benefice: 0,
+          ticketCount: 0,
+          vendeursActifs: 0,
+          topVendeurs: [],
+          tiragesJour: [],
+          parBorlette: [],
+          chartData: [],
+          revenueByTirage: [],
+          tirageNames: [],
+          lotto4: 0,
+          lotto5: 0,
+          topBoules: [],
+          boulesBloquees: 0,
+          recentTickets: [],
+          tirageActif: null,
         };
       }
-      return this.ticketsService.getAdminStats(periode || 'auj', vendeurUserIds, dateFrom, dateTo);
+      return this.ticketsService.getAdminStats(
+        periode || 'auj',
+        vendeurUserIds,
+        dateFrom,
+        dateTo,
+      );
     }
     const filterVendeurIds = vendeurId ? [vendeurId] : undefined;
-    return this.ticketsService.getAdminStats(periode || 'auj', filterVendeurIds, dateFrom, dateTo);
+    return this.ticketsService.getAdminStats(
+      periode || 'auj',
+      filterVendeurIds,
+      dateFrom,
+      dateTo,
+    );
   }
 
   @Get('boules/stats')
@@ -92,7 +125,13 @@ export class TicketsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR, UserRole.COMPTABLE, UserRole.SUPPORT, UserRole.VENDEUR)
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.SUPERVISEUR,
+    UserRole.COMPTABLE,
+    UserRole.SUPPORT,
+    UserRole.VENDEUR,
+  )
   findOne(@Param('id') id: string) {
     return this.ticketsService.findOne(id);
   }

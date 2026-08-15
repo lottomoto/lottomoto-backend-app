@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
@@ -50,7 +54,9 @@ export class AuthService {
         registerDto.firstname,
         tempPassword,
       );
-    } catch { /* email failure should not block registration */ }
+    } catch {
+      /* email failure should not block registration */
+    }
 
     return user;
   }
@@ -100,7 +106,9 @@ export class AuthService {
 
     if (deviceId) {
       if (result.vendeur.deviceId && result.vendeur.deviceId !== deviceId) {
-        throw new UnauthorizedException('Ce compte est lié à un autre appareil');
+        throw new UnauthorizedException(
+          'Ce compte est lié à un autre appareil',
+        );
       }
       if (!result.vendeur.deviceId) {
         await this.vendeursService.updateDeviceId(result.vendeur.id, deviceId);
@@ -132,7 +140,11 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     const user = await this.usersService.findByEmail(email);
-    if (!user) return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé' };
+    if (!user)
+      return {
+        message:
+          'Si cet email existe, un lien de réinitialisation a été envoyé',
+      };
 
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000); // 1h
@@ -143,10 +155,18 @@ export class AuthService {
     });
 
     try {
-      await this.mailService.sendResetPasswordEmail(email, user.firstname, token);
-    } catch { /* */ }
+      await this.mailService.sendResetPasswordEmail(
+        email,
+        user.firstname,
+        token,
+      );
+    } catch {
+      /* */
+    }
 
-    return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé' };
+    return {
+      message: 'Si cet email existe, un lien de réinitialisation a été envoyé',
+    };
   }
 
   async resetPassword(token: string, newPassword: string) {
@@ -161,8 +181,8 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.userRepository.update(user.id, {
       passwordHash,
-      resetPasswordToken: undefined as any,
-      resetPasswordExpires: undefined as any,
+      resetPasswordToken: undefined,
+      resetPasswordExpires: undefined,
     });
     await this.refreshTokenRepository
       .createQueryBuilder()
@@ -182,12 +202,16 @@ export class AuthService {
         throw new UnauthorizedException('Token invalide');
       }
       const tokenHash = this.hashToken(refreshToken);
-      const stored = await this.refreshTokenRepository.findOne({ where: { tokenHash } });
+      const stored = await this.refreshTokenRepository.findOne({
+        where: { tokenHash },
+      });
       if (!stored || stored.revokedAt || stored.expiresAt <= new Date()) {
         throw new UnauthorizedException('Token expiré ou invalide');
       }
 
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user || !user.isActive) {
         throw new UnauthorizedException('Token invalide');
       }
@@ -209,7 +233,9 @@ export class AuthService {
       .createQueryBuilder()
       .update(RefreshToken)
       .set({ revokedAt: new Date() })
-      .where('tokenHash = :tokenHash', { tokenHash: this.hashToken(refreshToken) })
+      .where('tokenHash = :tokenHash', {
+        tokenHash: this.hashToken(refreshToken),
+      })
       .andWhere('revokedAt IS NULL')
       .execute();
     return { message: 'Déconnecté' };
@@ -223,7 +249,11 @@ export class AuthService {
     };
     const refreshToken = this.jwtService.sign(
       { ...payload, type: 'refresh', jti: crypto.randomUUID() },
-      { expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME')! as any },
+      {
+        expiresIn: this.configService.get<string>(
+          'JWT_REFRESH_EXPIRATION_TIME',
+        )! as any,
+      },
     );
     const expiresAt = this.getRefreshExpiresAt();
 
@@ -253,7 +283,8 @@ export class AuthService {
   }
 
   private getRefreshExpiresAt(): Date {
-    const value = this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME') || '7d';
+    const value =
+      this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME') || '7d';
     const match = value.match(/^(\d+)([smhd])$/);
     if (!match) return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 

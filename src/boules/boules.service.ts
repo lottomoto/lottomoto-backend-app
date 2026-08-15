@@ -14,7 +14,10 @@ export class BoulesService implements OnModuleInit {
     const count = await this.bouleRepository.count();
     if (count === 0) {
       const boules = Array.from({ length: 100 }, (_, i) =>
-        this.bouleRepository.create({ numero: i, status: BouleStatus.DISPONIBLE }),
+        this.bouleRepository.create({
+          numero: i,
+          status: BouleStatus.DISPONIBLE,
+        }),
       );
       await this.bouleRepository.save(boules);
     }
@@ -32,9 +35,10 @@ export class BoulesService implements OnModuleInit {
 
   async toggleBlock(numero: number): Promise<Boule> {
     const boule = await this.findOne(numero);
-    boule.status = boule.status === BouleStatus.BLOQUEE
-      ? BouleStatus.DISPONIBLE
-      : BouleStatus.BLOQUEE;
+    boule.status =
+      boule.status === BouleStatus.BLOQUEE
+        ? BouleStatus.DISPONIBLE
+        : BouleStatus.BLOQUEE;
     return this.bouleRepository.save(boule);
   }
 

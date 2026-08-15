@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -11,7 +22,7 @@ import { UserRole } from './entities/user.entity';
 // @UseGuards(JwtAuthGuard, RolesGuard)
 // @Roles(UserRole.ADMIN)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -36,7 +47,9 @@ export class UsersController {
   @Delete(':uuid')
   remove(@Param('uuid') uuid: string, @Request() req: any) {
     if (req.user.uuid === uuid || req.user.id === uuid) {
-      throw new ForbiddenException('Vous ne pouvez pas supprimer votre propre compte');
+      throw new ForbiddenException(
+        'Vous ne pouvez pas supprimer votre propre compte',
+      );
     }
     return this.usersService.remove(uuid);
   }

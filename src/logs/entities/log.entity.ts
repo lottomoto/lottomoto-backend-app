@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 export enum ActionType {
@@ -9,7 +16,7 @@ export enum ActionType {
   LOGOUT = 'LOGOUT',
   PAY = 'PAY',
   CANCEL = 'CANCEL',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
 }
 
 @Entity('logs')

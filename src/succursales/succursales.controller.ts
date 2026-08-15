@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { SuccursalesService } from './succursales.service';
 import { CreateSuccursaleDto } from './dto/create-succursale.dto';
 import { UpdateSuccursaleDto } from './dto/update-succursale.dto';
@@ -52,7 +62,10 @@ export class SuccursalesController {
   @Post('vendeur/me/rapport')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.VENDEUR)
-  saveMyRapport(@Request() req: any, @Body() dto: { cashCollecte: number; dette: number; notes?: string }) {
+  saveMyRapport(
+    @Request() req: any,
+    @Body() dto: { cashCollecte: number; dette: number; notes?: string },
+  ) {
     const userId = req.user.uuid || req.user.id;
     return this.succursalesService.saveVendeurRapport(userId, dto);
   }
@@ -74,7 +87,11 @@ export class SuccursalesController {
     @Request() req: any,
   ) {
     const comptableId = req.user.uuid || req.user.id;
-    return this.succursalesService.comptableCollecter(comptableId, superviseurId, dto);
+    return this.succursalesService.comptableCollecter(
+      comptableId,
+      superviseurId,
+      dto,
+    );
   }
 
   @Get('comptable/collections')
@@ -109,10 +126,12 @@ export class SuccursalesController {
   @Post(':id/collecter')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  collecterCash(@Param('id') id: string, @Body() dto: { cashRecu: number; dette?: number; notes?: string }) {
+  collecterCash(
+    @Param('id') id: string,
+    @Body() dto: { cashRecu: number; dette?: number; notes?: string },
+  ) {
     return this.succursalesService.collecterCash(id, dto);
   }
-
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

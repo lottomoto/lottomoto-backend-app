@@ -1,9 +1,17 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Resultat } from './entities/resultat.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
-import { TicketLigne, LottoType, TicketLigneStatus } from '../tickets/entities/ticket-ligne.entity';
+import {
+  TicketLigne,
+  LottoType,
+  TicketLigneStatus,
+} from '../tickets/entities/ticket-ligne.entity';
 import { CreateResultatDto } from './dto/create-resultat.dto';
 import { UpdateResultatDto } from './dto/update-resultat.dto';
 
@@ -21,13 +29,22 @@ export class ResultatsService {
       where: { date: dto.date, tirage: dto.tirage, borletteId: dto.borletteId },
     });
     if (exists) {
-      throw new ConflictException('Un résultat existe déjà pour cette date, ce tirage et cette borlette');
+      throw new ConflictException(
+        'Un résultat existe déjà pour cette date, ce tirage et cette borlette',
+      );
     }
 
     const resultat = this.resultatRepository.create(dto);
     const saved = await this.resultatRepository.save(resultat);
 
-    await this.processTickets(dto.date, dto.tirage, dto.borletteId, dto.lot1, dto.lot2, dto.lot3);
+    await this.processTickets(
+      dto.date,
+      dto.tirage,
+      dto.borletteId,
+      dto.lot1,
+      dto.lot2,
+      dto.lot3,
+    );
 
     return this.findOne(saved.id);
   }
@@ -38,7 +55,10 @@ export class ResultatsService {
 
     await this.resultatRepository.update(id, dto);
 
-    const updated = await this.resultatRepository.findOne({ where: { id }, relations: { borlette: true } });
+    const updated = await this.resultatRepository.findOne({
+      where: { id },
+      relations: { borlette: true },
+    });
     if (updated) {
       await this.resetAndReprocessTickets(
         updated.date,
@@ -54,8 +74,12 @@ export class ResultatsService {
   }
 
   private async processTickets(
-    date: string, tirage: string, borletteId: string,
-    lot1: string, lot2: string, lot3: string,
+    date: string,
+    tirage: string,
+    borletteId: string,
+    lot1: string,
+    lot2: string,
+    lot3: string,
   ): Promise<void> {
     const tickets = await this.ticketRepository.find({
       where: { date, tirage, borletteId, status: TicketStatus.EN_ATTENTE },
@@ -68,7 +92,13 @@ export class ResultatsService {
       let hasWin = false;
       let gainTotal = 0;
       for (const l of ticket.lignes) {
-        const result = this.calculateLigneResult(l, lot1, lot2, lot3, lot1Boule);
+        const result = this.calculateLigneResult(
+          l,
+          lot1,
+          lot2,
+          lot3,
+          lot1Boule,
+        );
         l.status = result.status;
         l.gain = result.gain;
         if (l.status === TicketLigneStatus.GAGNE) hasWin = true;
@@ -81,8 +111,12 @@ export class ResultatsService {
   }
 
   private async resetAndReprocessTickets(
-    date: string, tirage: string, borletteId: string,
-    lot1: string, lot2: string, lot3: string,
+    date: string,
+    tirage: string,
+    borletteId: string,
+    lot1: string,
+    lot2: string,
+    lot3: string,
   ): Promise<void> {
     const tickets = await this.ticketRepository.find({
       where: { date, tirage, borletteId },
@@ -95,7 +129,13 @@ export class ResultatsService {
       let hasWin = false;
       let gainTotal = 0;
       for (const l of ticket.lignes) {
-        const result = this.calculateLigneResult(l, lot1, lot2, lot3, lot1Boule);
+        const result = this.calculateLigneResult(
+          l,
+          lot1,
+          lot2,
+          lot3,
+          lot1Boule,
+        );
         l.status = result.status;
         l.gain = result.gain;
         if (l.status === TicketLigneStatus.GAGNE) hasWin = true;
@@ -109,9 +149,11 @@ export class ResultatsService {
 
   private calculateLigneResult(
     ligne: TicketLigne,
-    lot1: string, lot2: string, lot3: string,
+    lot1: string,
+    lot2: string,
+    lot3: string,
     lot1Boule: number,
-  ): { gain: number, status: TicketLigneStatus } {
+  ): { gain: number; status: TicketLigneStatus } {
     const lot2Num = parseInt(lot2);
     const lot3Num = parseInt(lot3);
     let multiplier = 0;
@@ -128,32 +170,53 @@ export class ResultatsService {
       if (ligne.boule1 === ligne.boule2) {
         if (lotCounts[ligne.boule1] >= 2) multiplier += 1000;
       } else {
-        if (lotCounts[ligne.boule1] >= 1 && lotCounts[ligne.boule2] >= 1) multiplier += 1000;
+        if (lotCounts[ligne.boule1] >= 1 && lotCounts[ligne.boule2] >= 1)
+          multiplier += 1000;
       }
     } else if (ligne.type === LottoType.BLOTTO3) {
       const num = `${ligne.prefix}${String(ligne.boule1).padStart(2, '0')}`;
       if (num === lot1) multiplier += 500;
-    } else if (ligne.type === LottoType.LOTTO4 || ligne.type === LottoType.BLOTTO4) {
+    } else if (
+      ligne.type === LottoType.LOTTO4 ||
+      ligne.type === LottoType.BLOTTO4
+    ) {
       if (ligne.option === 'opt1') {
-        if (ligne.boule1 === lot2Num && ligne.boule2 === lot3Num) multiplier += 5000;
+        if (ligne.boule1 === lot2Num && ligne.boule2 === lot3Num)
+          multiplier += 5000;
       } else if (ligne.option === 'opt2') {
-        if (ligne.boule1 === lot1Boule && ligne.boule2 === lot2Num) multiplier += 5000;
+        if (ligne.boule1 === lot1Boule && ligne.boule2 === lot2Num)
+          multiplier += 5000;
       } else if (ligne.option === 'opt3') {
-        if (ligne.boule1 === lot1Boule && ligne.boule2 === lot3Num) multiplier += 5000;
+        if (ligne.boule1 === lot1Boule && ligne.boule2 === lot3Num)
+          multiplier += 5000;
       }
-    } else if (ligne.type === LottoType.LOTTO5 || ligne.type === LottoType.BLOTTO5) {
+    } else if (
+      ligne.type === LottoType.LOTTO5 ||
+      ligne.type === LottoType.BLOTTO5
+    ) {
       const prefixPlusBoule1 = `${ligne.prefix}${String(ligne.boule1).padStart(2, '0')}`;
       if (ligne.option === 'opt1') {
-        if (prefixPlusBoule1 === lot1 && ligne.boule2 === lot2Num) multiplier += 25000;
+        if (prefixPlusBoule1 === lot1 && ligne.boule2 === lot2Num)
+          multiplier += 25000;
       } else if (ligne.option === 'opt2') {
-        if (prefixPlusBoule1 === lot1 && ligne.boule2 === lot3Num) multiplier += 25000;
+        if (prefixPlusBoule1 === lot1 && ligne.boule2 === lot3Num)
+          multiplier += 25000;
       } else if (ligne.option === 'opt3') {
-        if (ligne.prefix === parseInt(lot1.slice(-1)) && ligne.boule1 === lot2Num && ligne.boule2 === lot3Num) multiplier += 25000;
+        if (
+          ligne.prefix === parseInt(lot1.slice(-1)) &&
+          ligne.boule1 === lot2Num &&
+          ligne.boule2 === lot3Num
+        )
+          multiplier += 25000;
       }
     }
 
     if (ligne.type === LottoType.JACKPOT) {
-      if (ligne.boule1 === lot1Boule && ligne.boule2 === lot2Num && ligne.boule3 === lot3Num) {
+      if (
+        ligne.boule1 === lot1Boule &&
+        ligne.boule2 === lot2Num &&
+        ligne.boule3 === lot3Num
+      ) {
         return { gain: 1000000, status: TicketLigneStatus.GAGNE };
       }
     }
@@ -161,7 +224,8 @@ export class ResultatsService {
     const gain = Number(ligne.prix) * multiplier;
     return {
       gain,
-      status: multiplier > 0 ? TicketLigneStatus.GAGNE : TicketLigneStatus.PERDU,
+      status:
+        multiplier > 0 ? TicketLigneStatus.GAGNE : TicketLigneStatus.PERDU,
     };
   }
 
@@ -184,7 +248,8 @@ export class ResultatsService {
 
   async remove(id: string): Promise<void> {
     const result = await this.resultatRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Résultat non trouvé');
+    if (result.affected === 0)
+      throw new NotFoundException('Résultat non trouvé');
   }
 
   private format(r: Resultat): any {

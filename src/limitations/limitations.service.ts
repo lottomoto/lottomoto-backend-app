@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Limitation } from './entities/limitation.entity';
@@ -15,8 +19,11 @@ export class LimitationsService {
   ) {}
 
   async create(dto: CreateLimitationDto): Promise<Limitation> {
-    const boule = await this.bouleRepository.findOne({ where: { numero: dto.bouleNumero } });
-    if (!boule) throw new NotFoundException(`Boule ${dto.bouleNumero} non trouvée`);
+    const boule = await this.bouleRepository.findOne({
+      where: { numero: dto.bouleNumero },
+    });
+    if (!boule)
+      throw new NotFoundException(`Boule ${dto.bouleNumero} non trouvée`);
 
     const exists = await this.limitationRepository.findOne({
       where: {
@@ -40,8 +47,16 @@ export class LimitationsService {
     return this.limitationRepository.save(limitation);
   }
 
-  async createForAll(bouleNumero: number, montant: number, date: string, borlettes: string[], tirages: string[]): Promise<Limitation[]> {
-    const boule = await this.bouleRepository.findOne({ where: { numero: bouleNumero } });
+  async createForAll(
+    bouleNumero: number,
+    montant: number,
+    date: string,
+    borlettes: string[],
+    tirages: string[],
+  ): Promise<Limitation[]> {
+    const boule = await this.bouleRepository.findOne({
+      where: { numero: bouleNumero },
+    });
     if (!boule) throw new NotFoundException(`Boule ${bouleNumero} non trouvée`);
 
     const created: Limitation[] = [];
@@ -74,7 +89,9 @@ export class LimitationsService {
   }
 
   async findByBoule(bouleNumero: number): Promise<any[]> {
-    const boule = await this.bouleRepository.findOne({ where: { numero: bouleNumero } });
+    const boule = await this.bouleRepository.findOne({
+      where: { numero: bouleNumero },
+    });
     if (!boule) return [];
     const limitations = await this.limitationRepository.find({
       where: { bouleId: boule.id },
@@ -86,7 +103,8 @@ export class LimitationsService {
 
   async remove(id: string): Promise<void> {
     const result = await this.limitationRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Limitation non trouvée');
+    if (result.affected === 0)
+      throw new NotFoundException('Limitation non trouvée');
   }
 
   private format(l: Limitation): any {

@@ -1,4 +1,11 @@
-import { BadRequestException, Controller, Post, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Post,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { SettingsService } from '../settings/settings.service';
@@ -17,12 +24,18 @@ export class UploadController {
   @Post('logo')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }),
+  )
   async uploadLogo(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('Aucun fichier reçu');
     }
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
+    if (
+      !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(
+        file.mimetype,
+      )
+    ) {
       throw new BadRequestException('Type de fichier non autorisé');
     }
     try {

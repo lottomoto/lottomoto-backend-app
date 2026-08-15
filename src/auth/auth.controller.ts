@@ -1,8 +1,24 @@
-import { Body, Controller, Get, Headers, Post, Req, Res, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request as ExpressRequest, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, LoginPinDto, ForgotPasswordDto, ResetPasswordDto } from './dto/create-auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  LoginPinDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/create-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Roles } from './decorators/roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
@@ -19,7 +35,12 @@ export class AuthController {
 
   @Post('register')
   @UseGuards(RateLimitGuard, JwtAuthGuard, RolesGuard)
-  @RateLimit({ keyPrefix: 'auth:register', limit: 5, windowMs: 15 * 60 * 1000, bodyFields: ['email'] })
+  @RateLimit({
+    keyPrefix: 'auth:register',
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    bodyFields: ['email'],
+  })
   @Roles(UserRole.ADMIN)
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
@@ -27,45 +48,77 @@ export class AuthController {
 
   @Post('login')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ keyPrefix: 'auth:login', limit: 5, windowMs: 15 * 60 * 1000, bodyFields: ['email'] })
+  @RateLimit({
+    keyPrefix: 'auth:login',
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    bodyFields: ['email'],
+  })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
     @Headers('x-client-type') clientType?: string,
   ) {
-    const tokens = await this.authService.loginWithPassword(loginDto.email, loginDto.password);
+    const tokens = await this.authService.loginWithPassword(
+      loginDto.email,
+      loginDto.password,
+    );
     return this.handleAuthResponse(tokens, res, clientType);
   }
 
   @Post('login/pin')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ keyPrefix: 'auth:login-pin', limit: 5, windowMs: 15 * 60 * 1000, bodyFields: ['username', 'deviceId'] })
+  @RateLimit({
+    keyPrefix: 'auth:login-pin',
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    bodyFields: ['username', 'deviceId'],
+  })
   async loginPin(
     @Body() loginPinDto: LoginPinDto,
     @Res({ passthrough: true }) res: Response,
     @Headers('x-client-type') clientType?: string,
   ) {
-    const tokens = await this.authService.loginWithPin(loginPinDto.username, loginPinDto.pin, loginPinDto.deviceId);
+    const tokens = await this.authService.loginWithPin(
+      loginPinDto.username,
+      loginPinDto.pin,
+      loginPinDto.deviceId,
+    );
     return this.handleAuthResponse(tokens, res, clientType);
   }
 
   @Post('verify-pin')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ keyPrefix: 'auth:verify-pin', limit: 5, windowMs: 15 * 60 * 1000, bodyFields: ['username'] })
+  @RateLimit({
+    keyPrefix: 'auth:verify-pin',
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    bodyFields: ['username'],
+  })
   verifyPin(@Body() dto: LoginPinDto) {
     return this.authService.verifyPin(dto.username, dto.pin);
   }
 
   @Post('forgot-password')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ keyPrefix: 'auth:forgot-password', limit: 3, windowMs: 60 * 60 * 1000, bodyFields: ['email'] })
+  @RateLimit({
+    keyPrefix: 'auth:forgot-password',
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+    bodyFields: ['email'],
+  })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
   @Post('reset-password')
   @UseGuards(RateLimitGuard)
-  @RateLimit({ keyPrefix: 'auth:reset-password', limit: 5, windowMs: 60 * 60 * 1000, bodyFields: ['token'] })
+  @RateLimit({
+    keyPrefix: 'auth:reset-password',
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+    bodyFields: ['token'],
+  })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
   }
@@ -79,7 +132,8 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Headers('x-client-type') clientType?: string,
   ) {
-    const refreshToken = dto?.refresh_token || this.getCookie(req, 'refresh_token');
+    const refreshToken =
+      dto?.refresh_token || this.getCookie(req, 'refresh_token');
     const tokens = await this.authService.refreshToken(refreshToken || '');
     return this.handleAuthResponse(tokens, res, clientType);
   }
@@ -90,7 +144,8 @@ export class AuthController {
     @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = dto?.refresh_token || this.getCookie(req, 'refresh_token');
+    const refreshToken =
+      dto?.refresh_token || this.getCookie(req, 'refresh_token');
     this.clearRefreshCookie(res);
     return this.authService.revokeRefreshToken(refreshToken);
   }
@@ -142,6 +197,8 @@ export class AuthController {
       .map((part) => part.trim())
       .find((part) => part.startsWith(`${name}=`));
 
-    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : undefined;
+    return cookie
+      ? decodeURIComponent(cookie.slice(name.length + 1))
+      : undefined;
   }
 }

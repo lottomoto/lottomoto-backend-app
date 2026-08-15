@@ -12,10 +12,7 @@ export class LogsController {
   constructor(private readonly logsService: LogsService) {}
 
   @Get()
-  findAll(
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
+  findAll(@Query('limit') limit?: string, @Query('offset') offset?: string) {
     const l = limit ? parseInt(limit, 10) : 50;
     const o = offset ? parseInt(offset, 10) : 0;
     return this.logsService.findAll(l, o);

@@ -24,7 +24,6 @@ export enum TicketLigneStatus {
   PERDU = 'perdu',
 }
 
-
 @Entity('ticket_lignes')
 export class TicketLigne {
   @PrimaryGeneratedColumn('uuid')
@@ -61,7 +60,11 @@ export class TicketLigne {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   prix: number;
 
-  @Column({ type: 'enum', enum: TicketLigneStatus, default: TicketLigneStatus.EN_ATTENTE })
+  @Column({
+    type: 'enum',
+    enum: TicketLigneStatus,
+    default: TicketLigneStatus.EN_ATTENTE,
+  })
   status: TicketLigneStatus;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })

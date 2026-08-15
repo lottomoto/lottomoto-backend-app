@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { VendeursService } from './vendeurs.service';
 import { CreateVendeurDto } from './dto/create-vendeur.dto';
 import { UpdateVendeurDto } from './dto/update-vendeur.dto';
@@ -19,7 +29,10 @@ export class VendeursController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  async create(@Request() req: any, @Body() createVendeurDto: CreateVendeurDto) {
+  async create(
+    @Request() req: any,
+    @Body() createVendeurDto: CreateVendeurDto,
+  ) {
     const result = await this.vendeursService.create(createVendeurDto);
     this.logsService.create({
       action: ActionType.CREATE,
@@ -48,13 +61,20 @@ export class VendeursController {
   @Patch('me/pin')
   @UseGuards(JwtAuthGuard)
   async changeMyPin(@Request() req: any, @Body() body: { pin: string }) {
-    return this.vendeursService.changePinByUserId(req.user.uuid || req.user.id, body.pin);
+    return this.vendeursService.changePinByUserId(
+      req.user.uuid || req.user.id,
+      body.pin,
+    );
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERVISEUR)
-  async update(@Request() req: any, @Param('id') id: string, @Body() updateVendeurDto: UpdateVendeurDto) {
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() updateVendeurDto: UpdateVendeurDto,
+  ) {
     const result = await this.vendeursService.update(id, updateVendeurDto);
     this.logsService.create({
       action: ActionType.UPDATE,

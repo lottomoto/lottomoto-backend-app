@@ -1,4 +1,11 @@
-import { IsString, IsArray, ValidateNested, MinLength, MaxLength, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  ValidateNested,
+  MinLength,
+  MaxLength,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class TirageDto {

@@ -1,4 +1,12 @@
-import { IsString, IsUUID, IsArray, ValidateNested, IsEnum, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsArray,
+  ValidateNested,
+  IsEnum,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { LottoType } from '../entities/ticket-ligne.entity';
 

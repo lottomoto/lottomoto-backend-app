@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Patch, ParseIntPipe, Body, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  ParseIntPipe,
+  Body,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { BoulesService } from './boules.service';
 import { UpdateBouleDto } from './dto/update-boule.dto';
 import { IsArray, IsNumber } from 'class-validator';

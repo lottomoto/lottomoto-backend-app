@@ -28,6 +28,6 @@ export class Vendeur {
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
   commission: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   deviceId: string | null;
 }

@@ -39,7 +39,11 @@ export class MailService {
     });
   }
 
-  async sendResetPasswordEmail(to: string, firstname: string, resetToken: string) {
+  async sendResetPasswordEmail(
+    to: string,
+    firstname: string,
+    resetToken: string,
+  ) {
     const resetUrl = `${this.configService.get<string>('FRONTEND_URL')}/reset-password?token=${resetToken}`;
 
     const html = this.compileTemplate('reset-password', {
